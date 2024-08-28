@@ -1,0 +1,14 @@
+[
+    {
+        "first_name": "John",
+        "last_name": "Doe",
+        "phone_number": "1234567890",
+        "address": "123 Elm Street",
+        "truck_name": "Truck A",
+        "destinations": [
+            "Destination A",
+            "Destination B"
+        ],
+        "sos_calls": 1
+    }
+]
