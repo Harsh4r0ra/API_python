@@ -1,3 +1,4 @@
+# main.py
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import json
@@ -5,65 +6,90 @@ import os
 
 app = FastAPI()
 
-# Define the path for the JSON file to store the data
-DATA_FILE = "drivers_data.json"
+# Define paths for JSON storage
+DATA_FILE = "data.json"
 
-# Driver data model
+# Initialize JSON file if it doesn't exist
+if not os.path.exists(DATA_FILE):
+    with open(DATA_FILE, "w") as file:
+        json.dump({"drivers": [], "admins": [], "3pl": []}, file)
+
+# Models
 class Driver(BaseModel):
     first_name: str
-    surname: str
+    last_name: str
     phone_number: str
     address: str
     truck_name: str
-    destination_a: str
-    destination_b: str
-    sos_calls: int = 0
+    destinations: list
+    sos_calls: int
 
-# Initialize the JSON file if it doesn't exist
-if not os.path.exists(DATA_FILE):
-    with open(DATA_FILE, "w") as f:
-        json.dump([], f)
+class Admin(BaseModel):
+    first_name: str
+    last_name: str
+    phone_number: str
+    company_name: str
 
-# Load data from JSON file
-def load_data():
-    with open(DATA_FILE, "r") as f:
-        return json.load(f)
+class ThirdPartyLogistics(BaseModel):
+    first_name: str
+    last_name: str
+    phone_number: str
+    company_name: str
 
-# Save data to JSON file
-def save_data(data):
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f, indent=4)
 
-# Get all drivers
-@app.get("/drivers")
-def get_drivers():
-    return load_data()
+# Helper functions
+def read_data():
+    with open(DATA_FILE, "r") as file:
+        return json.load(file)
 
-# Add a new driver
-@app.post("/drivers")
+def write_data(data):
+    with open(DATA_FILE, "w") as file:
+        json.dump(data, file, indent=4)
+
+
+# Routes for Drivers
+@app.post("/drivers/")
 def add_driver(driver: Driver):
-    data = load_data()
-    data.append(driver.dict())
-    save_data(data)
+    data = read_data()
+    data["drivers"].append(driver.dict())
+    write_data(data)
     return {"message": "Driver added successfully"}
 
-# Update driver data
-@app.put("/drivers/{phone_number}")
-def update_driver(phone_number: str, updated_driver: Driver):
-    data = load_data()
-    for driver in data:
-        if driver["phone_number"] == phone_number:
-            driver.update(updated_driver.dict())
-            save_data(data)
-            return {"message": "Driver updated successfully"}
-    raise HTTPException(status_code=404, detail="Driver not found")
-
-# Delete a driver
 @app.delete("/drivers/{phone_number}")
 def delete_driver(phone_number: str):
-    data = load_data()
-    new_data = [driver for driver in data if driver["phone_number"] != phone_number]
-    if len(new_data) == len(data):
-        raise HTTPException(status_code=404, detail="Driver not found")
-    save_data(new_data)
+    data = read_data()
+    data["drivers"] = [driver for driver in data["drivers"] if driver["phone_number"] != phone_number]
+    write_data(data)
     return {"message": "Driver deleted successfully"}
+
+
+# Routes for Admins
+@app.post("/admins/")
+def add_admin(admin: Admin):
+    data = read_data()
+    data["admins"].append(admin.dict())
+    write_data(data)
+    return {"message": "Admin added successfully"}
+
+@app.delete("/admins/{phone_number}")
+def delete_admin(phone_number: str):
+    data = read_data()
+    data["admins"] = [admin for admin in data["admins"] if admin["phone_number"] != phone_number]
+    write_data(data)
+    return {"message": "Admin deleted successfully"}
+
+
+# Routes for 3PL Personnel
+@app.post("/3pl/")
+def add_3pl(personnel: ThirdPartyLogistics):
+    data = read_data()
+    data["3pl"].append(personnel.dict())
+    write_data(data)
+    return {"message": "3PL personnel added successfully"}
+
+@app.delete("/3pl/{phone_number}")
+def delete_3pl(phone_number: str):
+    data = read_data()
+    data["3pl"] = [person for person in data["3pl"] if person["phone_number"] != phone_number]
+    write_data(data)
+    return {"message": "3PL personnel deleted successfully"}
